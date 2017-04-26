@@ -9,8 +9,7 @@ import (
 func newuser(username, pubkey, host string) string {
 	jsoncode := `{"user":"` + username + `","key":"` + pubkey + `","host":"` + host + `"}`
 	body := strings.NewReader(jsoncode)
-	println("sending request:")
-	println(jsoncode)
+	println("sending request...")
 	req, err := http.NewRequest("POST", "https://hashbang.sh/user/create", body)
 	if err != nil {
 		println(err.Error())
