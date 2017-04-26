@@ -1,18 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"time"
+
 	"github.com/gliderlabs/ssh"
+	pr "github.com/kr/pretty"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 var version = "0.0.1"
 
 func init() {
-	
+
 }
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		}),
 
 		// host key option -> $HOME/.ssh/id_sshd
-	//	ssh.HostKeyFile(os.Getenv("HOME")+"/.ssh/id_sshd"),
+		//	ssh.HostKeyFile(os.Getenv("HOME")+"/.ssh/id_sshd"),
 		ssh.HostKeyFile("id_sshd"),
 	)
 
@@ -56,7 +57,7 @@ func goodbye(s ssh.Session) {
 
 func newuserhandler(s ssh.Session) {
 	// log
-	println(time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(),"\n")
+	println(time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(), "\n")
 
 	// get pubkey or die
 	pubkey := s.PublicKey()
@@ -64,6 +65,7 @@ func newuserhandler(s ssh.Session) {
 		goodbye(s)
 		return
 	}
+
 	pkey := gossh.MarshalAuthorizedKey(pubkey)
 	// get username or die
 	username := s.User()
@@ -72,16 +74,23 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
+	s.Write([]byte("hello, " + username))
 
+	var resp string
 
+	resp = getter("https://hashbang.sh/server/stats")
+	println(username, "status", resp)
 	//
 	// send pubkey and username to API
 	//
-	println(newuser(username, string(pkey), "sf1.hashbang.sh"))
+	hostname := "sf1"
+	resp = newuser(username, string(pkey), hostname)
 
-	// tell user some info
+	println(username, resp)
+	io.WriteString(s, pr.Sprint(resp))
 
-	io.WriteString(s, fmt.Sprintf("public key used by %s:\n", s.User()))
+	// tell user response
+	io.WriteString(s, pr.Sprint(resp))
 	s.Write(pkey)
 
 	io.WriteString(s, "Hello, Goodbye!\n")
