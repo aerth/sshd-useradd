@@ -80,15 +80,14 @@ func newuserhandler(s ssh.Session) {
 
 	resp = getter("https://hashbang.sh/server/stats")
 	println(username, "status", resp)
+	io.WriteString(s, pr.Sprint(resp))
 	//
 	// send pubkey and username to API
 	//
-	hostname := "sf1"
+	hostname := "sf1.hashbang.sh"
 	resp = newuser(username, string(pkey), hostname)
 
 	println(username, resp)
-	io.WriteString(s, pr.Sprint(resp))
-
 	// tell user response
 	io.WriteString(s, pr.Sprint(resp))
 	s.Write(pkey)
