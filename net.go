@@ -46,6 +46,31 @@ func getter(url string) string {
 			return "error"
 	}
 	resp.Body.Close()
-	return decode(respbody)
+	return string(respbody)
+
+}
+
+
+func getstatus(url string) string {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		println(err.Error())
+		return "error"
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		println(err.Error())
+		return "error"
+	}
+	respbody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+			println(err.Error())
+			return "error"
+	}
+	resp.Body.Close()
+	return decodestatus(respbody)
 
 }

@@ -6,6 +6,7 @@ import (
 
 type ServerResponse struct {
 	Message string `json:"message"`
+	
 }
 
 func decode(b []byte) string {
@@ -16,4 +17,5 @@ func decode(b []byte) string {
 		return "{}"
 	}
 	return m.Message
-}
+
+}                                                          

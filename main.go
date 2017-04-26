@@ -73,11 +73,11 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
-	s.Write([]byte("Creating account on sf1.hashbang.sh"))
+	s.Write([]byte("Creating account on sf1.hashbang.sh\n"))
 
 	var resp string
 
-	resp = getter("https://hashbang.sh/server/stats")
+	resp = getstatus("https://hashbang.sh/server/stats")
 	println(username, "status", resp)
 	io.WriteString(s, resp)
 	//
