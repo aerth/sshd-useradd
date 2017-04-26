@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 	"time"
-
+	"strings"
 	"github.com/gliderlabs/ssh"
 	pr "github.com/kr/pretty"
 	gossh "golang.org/x/crypto/ssh"
@@ -85,7 +85,8 @@ func newuserhandler(s ssh.Session) {
 	// send pubkey and username to API
 	//
 	hostname := "sf1.hashbang.sh"
-	resp = newuser(username, string(pkey), hostname)
+	pstring := strings.TrimSuffix(string(pkey), "\n")
+	resp = newuser(username, pstring, hostname)
 
 	println(username, resp)
 	// tell user response
