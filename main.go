@@ -77,14 +77,11 @@ func newuserhandler(s ssh.Session) {
 
 	
 	s.Write([]byte("Creating account on sf1.hashbang.sh\n"))
-	var resp string
-	resp = getstatus("https://hashbang.sh/server/stats")
+	b := getstatus("https://hashbang.sh/server/stats")
 
 	// log
 	fmt.Fprintln(os.Stderr, time.Now().String(), username, "status")
-
-	
-	io.WriteString(s, resp)
+	io.WriteString(s, fmt.Sprintln(decodestatus(b)))
 	<-time.After(3*time.Second)
 	
 	//
@@ -92,13 +89,12 @@ func newuserhandler(s ssh.Session) {
 	//
 	hostname := "sf1.hashbang.sh"
 	pstring := strings.TrimSuffix(string(pkey), "\n")
-	resp = newuser(username, pstring, hostname)
-
-
+	resp := newuser(username, pstring, hostname)
 	// print reply
 	fmt.Println(time.Now().String(), username, resp)
-
 	// tell user response
 	io.WriteString(s, resp+"\n")
+
+
 	s.Exit(1)
 }
