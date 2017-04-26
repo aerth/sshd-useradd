@@ -24,7 +24,7 @@ func newuser(username, pubkey, host string) string {
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	return jsoncode+"\n"+string(respbody)+"\n"
+	return jsoncode+"\n"+decode(respbody)+"\n"
 }
 
 func getter(url string) string {
@@ -47,6 +47,6 @@ func getter(url string) string {
 			return "error"
 	}
 	resp.Body.Close()
-	return string(respbody)
+	return decode(respbody)
 
 }
