@@ -23,7 +23,7 @@ func newuser(username, pubkey, host string) string {
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	return jsoncode+"\n"+decode(respbody)+"\n"
+	return decode(respbody)
 }
 
 func getter(url string) string {
