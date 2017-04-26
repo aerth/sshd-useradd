@@ -6,7 +6,6 @@ import (
 	"time"
 	"strings"
 	"github.com/gliderlabs/ssh"
-	pr "github.com/kr/pretty"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -80,7 +79,7 @@ func newuserhandler(s ssh.Session) {
 
 	resp = getter("https://hashbang.sh/server/stats")
 	println(username, "status", resp)
-	io.WriteString(s, pr.Sprint(resp))
+	io.WriteString(s, resp)
 	//
 	// send pubkey and username to API
 	//
@@ -90,9 +89,6 @@ func newuserhandler(s ssh.Session) {
 
 	println(username, resp)
 	// tell user response
-	io.WriteString(s, pr.Sprint(resp))
-	s.Write(pkey)
-
-	io.WriteString(s, "Hello, Goodbye!\n")
+	io.WriteString(s, resp)
 	s.Exit(1)
 }
