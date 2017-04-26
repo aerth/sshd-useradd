@@ -16,8 +16,7 @@ func newuser(username, pubkey, host string) string {
 		println(err.Error())
 		return "error"
 	}
-	req.Header.Set("Content-Type", "application/json")
-	//	req.Header.Set("User-Agent", "sshd-adduser/"+version)
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		println(err.Error())
@@ -35,7 +34,7 @@ func getter(url string) string {
 		return "error"
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -43,6 +42,10 @@ func getter(url string) string {
 		return "error"
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+			println(err.Error())
+			return "error"
+	}
 	resp.Body.Close()
 	return string(respbody)
 
