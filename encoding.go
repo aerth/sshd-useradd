@@ -10,7 +10,7 @@ type ServerResponse struct {
 
 func decode(b []byte) string {
 	var m ServerResponse
-	err := json.Unmarshal(b, m)
+	err := json.Unmarshal(b, &m)
 	if err != nil {
 		println(err.Error())
 		return "{}"
