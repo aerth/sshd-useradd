@@ -73,7 +73,7 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
-	s.Write([]byte("hello, " + username))
+	s.Write([]byte("Creating account on sf1.hashbang.sh"))
 
 	var resp string
 
@@ -89,6 +89,6 @@ func newuserhandler(s ssh.Session) {
 
 	println(username, resp)
 	// tell user response
-	io.WriteString(s, resp)
+	io.WriteString(s, resp+"\n")
 	s.Exit(1)
 }
