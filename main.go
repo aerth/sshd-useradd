@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"fmt"
 	"os"
 	"time"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-var version = "0.0.1"
+var version = "0.0.2"
 
 func init() {
 
@@ -56,7 +57,7 @@ func goodbye(s ssh.Session) {
 
 func newuserhandler(s ssh.Session) {
 	// log
-	println(time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(), "\n")
+	fmt.Fprintln(os.Stderr, time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(), "\n")
 
 	// get pubkey or die
 	pubkey := s.PublicKey()
@@ -66,6 +67,7 @@ func newuserhandler(s ssh.Session) {
 	}
 
 	pkey := gossh.MarshalAuthorizedKey(pubkey)
+
 	// get username or die
 	username := s.User()
 	if username == "" {
@@ -73,22 +75,26 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
+	
 	s.Write([]byte("Creating account on sf1.hashbang.sh\n"))
+	b := getstatus("https://hashbang.sh/server/stats")
 
-	var resp string
-
-	resp = getstatus("https://hashbang.sh/server/stats")
-	println(username, "status", resp)
-	io.WriteString(s, resp)
+	// log
+	fmt.Fprintln(os.Stderr, time.Now().String(), username, "status")
+	io.WriteString(s, fmt.Sprintln(decodestatus(b)))
+	<-time.After(3*time.Second)
+	
 	//
 	// send pubkey and username to API
 	//
 	hostname := "sf1.hashbang.sh"
 	pstring := strings.TrimSuffix(string(pkey), "\n")
-	resp = newuser(username, pstring, hostname)
-
-	println(username, resp)
+	resp := newuser(username, pstring, hostname)
+	// print reply
+	fmt.Println(time.Now().String(), username, resp)
 	// tell user response
 	io.WriteString(s, resp+"\n")
+
+
 	s.Exit(1)
 }
