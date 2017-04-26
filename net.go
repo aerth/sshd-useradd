@@ -71,6 +71,6 @@ func getstatus(url string) string {
 			return "error"
 	}
 	resp.Body.Close()
-	return decodestatus(respbody)
+	return string(respbody)
 
 }
