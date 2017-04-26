@@ -2,12 +2,14 @@ package main
 
 import (
 	"io"
+	"log"
 	"fmt"
 	"os"
 	"time"
 	"strings"
 	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
+	term "golang.org/x/crypto/ssh/terminal"
 )
 
 var version = "0.0.2"
@@ -67,7 +69,9 @@ func newuserhandler(s ssh.Session) {
 	}
 
 	pkey := gossh.MarshalAuthorizedKey(pubkey)
+	
 
+	
 	// get username or die
 	username := s.User()
 	if username == "" {
@@ -87,14 +91,36 @@ func newuserhandler(s ssh.Session) {
 	//
 	// send pubkey and username to API
 	//
-	hostname := "sf1.hashbang.sh"
+
+	t := term.NewTerminal(s, "> ")
+
+	oldState, err := term.MakeRaw(0)
+	if err != nil {
+	        panic(err)
+	        s.Exit(1)
+	}
+	defer term.Restore(0, oldState)
+
+
+	
 	pstring := strings.TrimSuffix(string(pkey), "\n")
-	resp := newuser(username, pstring, hostname)
+	shellhost, err :=  t.ReadLine()
+	if err != nil {
+		log.Println(err.Error())
+		goodbye(s)
+		s.Exit(1)
+	}
+	println(username,pstring,shellhost)
+
+	
+//	resp := newuser(username, pstring, hostname)
+	resp := "net disabled"
 	// print reply
 	fmt.Println(time.Now().String(), username, resp)
 	// tell user response
 	io.WriteString(s, resp+"\n")
 
+	
 
 	s.Exit(1)
 }

@@ -34,7 +34,7 @@ func decode(b []byte) string {
 
 func decodestatus(b []byte) map[string]ServerStatus {
 	var	status = make(map[string]ServerStatus)
-	err := json.Unmarshal(b, status)
+	err := json.Unmarshal(b, &status)
 	if err != nil {
 		println(err.Error())
 	}
