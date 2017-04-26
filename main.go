@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"fmt"
 	"os"
 	"time"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-var version = "0.0.1"
+var version = "0.0.2"
 
 func init() {
 
@@ -56,7 +57,7 @@ func goodbye(s ssh.Session) {
 
 func newuserhandler(s ssh.Session) {
 	// log
-	println(time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(), "\n")
+	fmt.Fprintln(os.Stderr, time.Now().String(), s.RemoteAddr().String(), s.Environ(), s.Command(), "\n")
 
 	// get pubkey or die
 	pubkey := s.PublicKey()
@@ -66,6 +67,7 @@ func newuserhandler(s ssh.Session) {
 	}
 
 	pkey := gossh.MarshalAuthorizedKey(pubkey)
+
 	// get username or die
 	username := s.User()
 	if username == "" {
@@ -73,13 +75,18 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
+	
 	s.Write([]byte("Creating account on sf1.hashbang.sh\n"))
-
 	var resp string
-
 	resp = getstatus("https://hashbang.sh/server/stats")
-	println(username, "status", resp)
+
+	// log
+	fmt.Fprintln(os.Stderr, time.Now().String(), username, "status")
+
+	
 	io.WriteString(s, resp)
+	<-time.After(3*time.Second)
+	
 	//
 	// send pubkey and username to API
 	//
@@ -87,7 +94,10 @@ func newuserhandler(s ssh.Session) {
 	pstring := strings.TrimSuffix(string(pkey), "\n")
 	resp = newuser(username, pstring, hostname)
 
-	println(username, resp)
+
+	// print reply
+	fmt.Println(time.Now().String(), username, resp)
+
 	// tell user response
 	io.WriteString(s, resp+"\n")
 	s.Exit(1)
