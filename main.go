@@ -77,7 +77,7 @@ func newuserhandler(s ssh.Session) {
 	//
 	// send pubkey and username to API
 	//
-	newuser(username, string(pkey), "sf1.hashbang.sh")
+	println(newuser(username, string(pkey), "sf1.hashbang.sh"))
 
 	// tell user some info
 
