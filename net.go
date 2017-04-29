@@ -42,14 +42,13 @@ func getter(url string) string {
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-			println(err.Error())
-			return "error"
+		println(err.Error())
+		return "error"
 	}
 	resp.Body.Close()
 	return string(respbody)
 
 }
-
 
 func getstatus(url string) []byte {
 	req, err := http.NewRequest("GET", url, nil)
@@ -67,8 +66,8 @@ func getstatus(url string) []byte {
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-			println(err.Error())
-			return []byte("error")
+		println(err.Error())
+		return []byte("error")
 	}
 	resp.Body.Close()
 	return respbody

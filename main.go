@@ -1,21 +1,40 @@
 package main
 
 import (
-	"io"
-	"log"
 	"fmt"
-	"os"
-	"time"
-	"strings"
 	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
 	term "golang.org/x/crypto/ssh/terminal"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"time"
 )
 
-var version = "0.0.2"
+var version = "0.0.3"
 
 func init() {
 
+}
+
+func authPublicKey (ctx ssh.Context, key ssh.PublicKey) bool {
+	return true // always return true, keeping key
+}
+
+func authKeyboardInteractive (ctx ssh.Context, password string) bool {
+	return true // always return true, 
+}
+
+var DefaultServer = ssh.Server {
+	Addr: "0.0.0.0:4444",
+	Handler: handleEntrypoint,
+	PublicKeyHandler: handlePublicKey,
+	PasswordHandler: handlePassword,
+}
+
+func init(){
+	ssh.DefaultServer.ssh.HostKeyFile("key.pem")
 }
 
 func main() {
@@ -26,7 +45,9 @@ func main() {
 	}
 
 	port := os.Args[1]
+	
 	println("starting ssh server on port:", port)
+
 	err := ssh.ListenAndServe(
 
 		// interface+port
@@ -36,10 +57,8 @@ func main() {
 		newuserhandler,
 
 		// pubkey always true option
-		ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
-			return true // always return true, keeping key
-		}),
-
+		ssh.PublicKeyAuth(),
+		
 		// host key option -> $HOME/.ssh/id_sshd
 		//	ssh.HostKeyFile(os.Getenv("HOME")+"/.ssh/id_sshd"),
 		ssh.HostKeyFile("id_sshd"),
@@ -69,9 +88,11 @@ func newuserhandler(s ssh.Session) {
 	}
 
 	pkey := gossh.MarshalAuthorizedKey(pubkey)
-	
+	if pkey == nil {
+		goodbye(s)
+		return
+	}
 
-	
 	// get username or die
 	username := s.User()
 	if username == "" {
@@ -79,48 +100,84 @@ func newuserhandler(s ssh.Session) {
 		return
 	}
 
-	
 	s.Write([]byte("Creating account on sf1.hashbang.sh\n"))
-	b := getstatus("https://hashbang.sh/server/stats")
-
+	
 	// log
 	fmt.Fprintln(os.Stderr, time.Now().String(), username, "status")
-	io.WriteString(s, fmt.Sprintln(decodestatus(b)))
-	<-time.After(3*time.Second)
-	
+	hosts := decodestatus(getstatus("https://hashbang.sh/server/stats"))
+	io.WriteString(s, fmt.Sprintf("found %v hosts:\n", len(hosts)))
+
+	for name, host := range hosts {
+		host.hostname = name
+	}
+
 	//
 	// send pubkey and username to API
 	//
 
 	t := term.NewTerminal(s, "> ")
+	hostname, _ := os.Hostname()
 
-	oldState, err := term.MakeRaw(0)
-	if err != nil {
-	        panic(err)
-	        s.Exit(1)
+	if hostname != "" {
+		t.Write([]byte("\nYou are connected to: " + hostname + "\n\n"))
 	}
-	defer term.Restore(0, oldState)
-
-
-	
 	pstring := strings.TrimSuffix(string(pkey), "\n")
-	shellhost, err :=  t.ReadLine()
-	if err != nil {
-		log.Println(err.Error())
-		goodbye(s)
-		s.Exit(1)
+
+	var input, resp string
+	var err error
+
+	for {
+		input, err = t.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				log.Println(err.Error())
+			}
+			goodbye(s)
+			s.Exit(1)
+		}
+		cmd := strings.TrimSuffix(input, "\n")
+		switch cmd {
+		case "status":
+		
+			hosts := decodestatus(getstatus("https://hashbang.sh/server/stats"))
+			for hostname, host := range hosts {
+				io.WriteString(s, "\n\n"+hostname+"\n")
+				io.WriteString(s, host.String())
+			}
+		case "new":
+			io.WriteString(s, fmt.Sprintf("Username: %s\n", username))
+			io.WriteString(s, "Creating a new #! account..\n")
+			hosts := decodestatus(getstatus("https://hashbang.sh/server/stats"))
+			io.WriteString(s, "Which #! hostname?\nAvailable Hosts:\n\n")
+			for name  := range hosts {
+				io.WriteString(s, fmt.Sprintf("%s ", name))
+			}
+			io.WriteString(s, "\n\n")
+			input, err = t.ReadLine()
+			if err != nil {
+				log.Println(err.Error())
+				goodbye(s)
+				s.Exit(1)
+			}
+			resp = newuser(username, pstring, hostname)
+		case "exit", "", "EOF", "EOF\n":
+			goto Done
+		case "help":
+			io.WriteString(s, "Commands: 'new', 'exit', 'help'\n")
+		default:
+			resp = fmt.Sprintf("error: command %q not found", cmd)
+		}
+
+		// print reply
+		log.Println(username, resp)
+		io.WriteString(s, resp+"\n")
+		if resp == "success" {
+			io.WriteString(s, fmt.Sprintf("now log in lik this: ssh %s@%s\n", username, hostname))
+		}
+
 	}
-	println(username,pstring,shellhost)
 
-	
-//	resp := newuser(username, pstring, hostname)
-	resp := "net disabled"
-	// print reply
-	fmt.Println(time.Now().String(), username, resp)
-	// tell user response
-	io.WriteString(s, resp+"\n")
-
-	
+Done:
 
 	s.Exit(1)
 }
