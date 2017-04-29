@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gliderlabs/ssh"
+	"github.com/aerth/ssh"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
