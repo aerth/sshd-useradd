@@ -18,6 +18,7 @@ var handler = func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Form)
 	}
 	log.Println(r.Method, r.UserAgent(), r.URL.Path)
+	w.Write([]byte(`{}`))
 }
 
 func main() {

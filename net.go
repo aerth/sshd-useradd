@@ -6,11 +6,18 @@ import (
 	"strings"
 )
 
+//var apiurl = "https://hashbang.sh/user/create"
+//var apistatusurl = "https://hashbang.sh/server/stats"
+
+// run debughttp server on 8666
+var apistatusurl = "http://localhost:8666"
+var apiurl = "http://localhost:8666"
+
 func newuser(username, pubkey, host string) string {
 	jsoncode := `{"user":"` + username + `","key":"` + pubkey + `","host":"` + host + `"}`
 	body := strings.NewReader(jsoncode)
 	println("sending request...")
-	req, err := http.NewRequest("POST", "https://hashbang.sh/user/create", body)
+	req, err := http.NewRequest("POST", apiurl, body)
 	if err != nil {
 		println(err.Error())
 		return "error"
