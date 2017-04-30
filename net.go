@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -16,7 +17,7 @@ var apistatusurl = "https://hashbang.sh/server/stats"
 func newuser(username, pubkey, host string) string {
 	jsoncode := `{"user":"` + username + `","key":"` + pubkey + `","host":"` + host + `"}`
 	body := strings.NewReader(jsoncode)
-	println("sending request...")
+	log.Printf("sending CREATE request for %q on %q", username, host)
 	req, err := http.NewRequest("POST", apiurl, body)
 	if err != nil {
 		println(err.Error())

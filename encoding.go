@@ -28,7 +28,7 @@ func decode(b []byte) string {
 	err := json.Unmarshal(b, &m)
 	if err != nil {
 		println(err.Error())
-		return "{}"
+		return "error decoding json: " + string(b)
 	}
 	return m.Message
 

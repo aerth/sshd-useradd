@@ -14,6 +14,7 @@ import (
 )
 
 var sshUsage = "Commands: 'new', 'exit', 'help'\n"
+
 func init() {
 	log.SetPrefix("")
 	log.SetFlags(log.Ltime)
@@ -22,6 +23,12 @@ func init() {
 func handleEntrypoint(s ssh.Session) {
 	// log
 	log.Println(s.RemoteAddr().String(), s.Environ(), s.Command())
+
+	if s.Command() != nil {
+		s.Write([]byte("DENIED\n"))
+		goodbye(s)
+		return
+	}
 
 	// get pubkey or die
 	pubkey := s.PublicKey()
@@ -67,9 +74,10 @@ func handleNewAccount(s ssh.Session, username, pkey string) {
 	var input, resp string
 	var err error
 
+	io.WriteString(t, "WELCOME\n")
+	io.WriteString(t, "Use the 'help' command for usage information.\n")
+
 	for {
-		io.WriteString(t, "WELCOME\n")
-		io.WriteString(t, sshUsage)
 		t.SetPrompt("> ")
 		input, err = t.ReadLine()
 		if err != nil {
@@ -82,12 +90,12 @@ func handleNewAccount(s ssh.Session, username, pkey string) {
 		cmd := strings.TrimSuffix(input, "\n")
 		switch cmd {
 		case "status":
-
 			hosts := decodestatus(getstatus(apistatusurl))
 			for hostname, host := range hosts {
 				io.WriteString(t, "\n\n"+hostname+"\n")
 				io.WriteString(t, host.String())
 			}
+			continue
 		case "new":
 			t.SetPrompt(" ")
 			io.WriteString(t, fmt.Sprintf("Username: %s\nWould you like to change username? [y/N]", username))
@@ -97,10 +105,9 @@ func handleNewAccount(s ssh.Session, username, pkey string) {
 				username = getstring(t)
 			}
 
-			
 		ChooseHost:
 			hosts := listHosts(s)
-			
+
 			t.Write([]byte(fmt.Sprintf("Which host? [1-%v]", len(hosts))))
 			choice := getstring(t)
 			n, err := strconv.Atoi(choice)
@@ -112,21 +119,23 @@ func handleNewAccount(s ssh.Session, username, pkey string) {
 				t.Write([]byte("Host not found, try again.\n"))
 				goto ChooseHost
 			}
-	io.WriteString(t, fmt.Sprintf("Username: %s\n", username))
-	io.WriteString(t, fmt.Sprintf("Host: %s\n", hosts[n-1]))		
+			io.WriteString(t, fmt.Sprintf("Username: %s\n", username))
+			io.WriteString(t, fmt.Sprintf("Host: %s\n", hosts[n-1]))
 			t.Write([]byte("Ready to create? [y/N]"))
 			if getbool(t) {
 				t.Write([]byte("Sending request...\n\n"))
 				resp = newuser(username, pstring, hosts[n-1])
 				if resp == "success" {
-				t.Write([]byte(welcome))
+					welcome := fmt.Sprintf("\n\nRegistration was a success. You can now login using an ssh command such as:\n\tssh %s@%s\n\n", username, hosts[n-1])
+					t.Write([]byte(welcome))
 					goto Done
-				} 
+				}
 				if resp == "" {
-						resp = "connection to API server failed"
-				} 
-					t.Write([]byte(fmt.Sprintf("Registration failed: %s\n", resp)))
-				
+					resp = "connection to API server failed"
+				}
+				t.Write([]byte(fmt.Sprintf("Registration failed: %s\n", resp)))
+				resp = ""
+
 			} else {
 				resp = "bailed out"
 			}
@@ -139,8 +148,9 @@ func handleNewAccount(s ssh.Session, username, pkey string) {
 			resp = fmt.Sprintf("error: command %q not found, try 'help'", cmd)
 		}
 
-		// print reply
+		// print reply or newline
 		io.WriteString(t, resp+"\n")
+
 	}
 
 Done:
