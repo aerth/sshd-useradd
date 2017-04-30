@@ -5,13 +5,15 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/aerth/ssh"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
-var sshUsage =  "Commands: 'new', 'exit', 'help'\n"
+
+var sshUsage = "Commands: 'new', 'exit', 'help'\n"
 func init() {
 	log.SetPrefix("")
 	log.SetFlags(log.Ltime)
@@ -45,7 +47,7 @@ func handleEntrypoint(s ssh.Session) {
 
 	handleNewAccount(s, username, string(pkey))
 }
-func handleNewAccount(s ssh.Session, username, pkey string){
+func handleNewAccount(s ssh.Session, username, pkey string) {
 	s.Write(([]byte("\033[H\033[2J" + "NEW ACCOUNT\n")))
 
 	t := terminal.NewTerminal(s, "> ")
@@ -95,21 +97,40 @@ func handleNewAccount(s ssh.Session, username, pkey string){
 				username = getstring(t)
 			}
 
-			io.WriteString(t, fmt.Sprintf("Username: %s\n", username))
+			
+		ChooseHost:
+			hosts := listHosts(s)
+			
+			t.Write([]byte(fmt.Sprintf("Which host? [1-%v]", len(hosts))))
+			choice := getstring(t)
+			n, err := strconv.Atoi(choice)
+			if err != nil {
+				t.Write([]byte("Error: " + err.Error()))
+				goto ChooseHost
+			}
+			if len(hosts) < n || n < 1 {
+				t.Write([]byte("Host not found, try again.\n"))
+				goto ChooseHost
+			}
+	io.WriteString(t, fmt.Sprintf("Username: %s\n", username))
+	io.WriteString(t, fmt.Sprintf("Host: %s\n", hosts[n-1]))		
 			t.Write([]byte("Ready to create? [y/N]"))
-			if getbool(t){
+			if getbool(t) {
 				t.Write([]byte("Sending request...\n\n"))
-				resp = newuser(username, pstring, hostname)
-				if resp != "success" {
-					if resp == "" {
+				resp = newuser(username, pstring, hosts[n-1])
+				if resp == "success" {
+				t.Write([]byte(welcome))
+					goto Done
+				} 
+				if resp == "" {
 						resp = "connection to API server failed"
-					}
+				} 
 					t.Write([]byte(fmt.Sprintf("Registration failed: %s\n", resp)))
-				}
+				
 			} else {
 				resp = "bailed out"
 			}
-			
+
 		case "exit", "", "EOF", "EOF\n":
 			goto Done
 		case "help":
@@ -127,33 +148,35 @@ Done:
 	s.Exit(1)
 }
 
-func ListHosts(s ssh.Session) {
-	hosts := decodestatus(getstatus(apistatusurl))
-	io.WriteString(s, fmt.Sprintf("found %v hosts:\n", len(hosts)))
-	for name, host := range hosts {
-		host.hostname = name
-	}
-	io.WriteString(s, "Which #! hostname?\nAvailable Hosts:\n\n")
-	for name := range hosts {
-		io.WriteString(s, fmt.Sprintf("%s ", name))
-	}
+func listHosts(s ssh.Session) (hosts []string) {
+	hostmap := decodestatus(getstatus(apistatusurl))
 
+	for name := range hostmap {
+		hosts = append(hosts, name)
+	}
+	io.WriteString(s, fmt.Sprintf("found %v hosts:\n\n", len(hosts)))
+	for i, name := range hosts {
+		io.WriteString(s, fmt.Sprintf("%v %s\n", i+1, name))
+	}
+	io.WriteString(s, "\n")
+	return hosts
 }
+
 func getbool(t *terminal.Terminal) bool {
-				input, err := t.ReadLine()
-				if err != nil {
-					return false
-				}
-				yn := strings.ToLower(input)
-				switch yn {
-					case "yes", "y":
-						return true						
-					default:
-						return false
-					}
+	input, err := t.ReadLine()
+	if err != nil {
+		return false
+	}
+	yn := strings.ToLower(input)
+	switch yn {
+	case "yes", "y":
+		return true
+	default:
+		return false
+	}
 }
 
 func getstring(t *terminal.Terminal) string {
-			input, _ := t.ReadLine()
-			return input
+	input, _ := t.ReadLine()
+	return input
 }
