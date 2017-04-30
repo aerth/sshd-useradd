@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-//var apiurl = "https://hashbang.sh/user/create"
-//var apistatusurl = "https://hashbang.sh/server/stats"
+var apiurl = "https://hashbang.sh/user/create"
+var apistatusurl = "https://hashbang.sh/server/stats"
 
 // run debughttp server on 8666
-var apistatusurl = "http://localhost:8666"
-var apiurl = "http://localhost:8666"
+//var apistatusurl = "http://localhost:8666"
+//var apiurl = "http://localhost:8666"
 
 func newuser(username, pubkey, host string) string {
 	jsoncode := `{"user":"` + username + `","key":"` + pubkey + `","host":"` + host + `"}`
