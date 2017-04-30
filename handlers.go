@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var sshUsage = "Commands: 'new', 'exit', 'help'\n"
+var sshUsage = "Commands: 'new', 'exit', 'status', 'help'\n"
 
 func init() {
 	log.SetPrefix("")
